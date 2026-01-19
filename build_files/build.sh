@@ -43,13 +43,9 @@ echo "::group:: Install"
 
 # this installs a package from fedora repos
 dnf5 install -y \
-  # systemtools
   btop \
-  # dev tools
   tmux vim-enhanced git \
-  # shells
   fish zsh \
-  # Container tools
   podman-compose
 
 # Docker
@@ -70,6 +66,11 @@ systemctl enable podman.socket
 dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
 dnf config-manager setopt tailscale-stable.enabled=0
 dnf -y install --enablerepo='tailscale-stable' tailscale
+
+# Sublime Text
+dnf config-manager addrepo --from-repofile=https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
+dnf config-manager setopt sublime-text.enabled=0
+dnf -y install --enablerepo='sublime-text' sublime-text
 
 # Install nerdfonts (all of them them for simpler management)
 copr_install_isolated "che/nerd-fonts" "nerd-fonts"
