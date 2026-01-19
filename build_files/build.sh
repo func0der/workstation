@@ -7,7 +7,7 @@ source /ctx/build_files/shared/copr-helpers.sh
 echo "::group:: Copy Files"
 
 ### Copy files to image
-rsync -rvK /ctx/system_files/dx/ /
+rsync -rvK /ctx/system_files/ /
 
 mkdir -p /tmp/scripts/helpers
 install -Dm0755 /ctx/build_files/shared/utils/ghcurl /tmp/scripts/helpers/ghcurl
