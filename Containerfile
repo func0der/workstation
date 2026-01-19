@@ -4,7 +4,7 @@ COPY build_files /build_files
 COPY system_files /system_files
 
 # Base Image
-FROM quay.io/fedora/fedora-bootc:43
+FROM quay.io/fedora/fedora-silverblue:43
 
 ### [IM]MUTABLE /opt
 ## Some bootable images, like Fedora, have /opt symlinked to /var/opt, in order to
