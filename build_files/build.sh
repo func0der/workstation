@@ -2,6 +2,38 @@
 
 set -ouex pipefail
 
+source /ctx/build_files/shared/copr-helpers.sh
+
+echo "::group:: Copy Files"
+
+### Copy files to image
+rsync -rvK /ctx/system_files/dx/ /
+
+mkdir -p /tmp/scripts/helpers
+install -Dm0755 /ctx/build_files/shared/utils/ghcurl /tmp/scripts/helpers/ghcurl
+export PATH="/tmp/scripts/helpers:$PATH"
+
+echo "::endgroup::"
+
+
+echo "::group:: Installation preparation"
+
+# Apply IP Forwarding before installing Docker to prevent messing with LXC networking
+sysctl -p
+
+# Load iptable_nat module for docker-in-docker.
+# See:
+#   - https://github.com/ublue-os/bluefin/issues/2365
+#   - https://github.com/devcontainers/features/issues/1235
+mkdir -p /etc/modules-load.d
+tee /etc/modules-load.d/ip_tables.conf <<EOF
+iptable_nat
+EOF
+
+echo "::endgroup::"
+
+
+echo "::group:: Install"
 ### Install packages
 
 # Packages can be installed from any enabled yum repo on the image.
@@ -10,15 +42,62 @@ set -ouex pipefail
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/43/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
-dnf5 install -y tmux 
+dnf5 install -y \
+  # systemtools
+  btop \
+  # dev tools
+  tmux vim-enhanced git \
+  # shells
+  fish zsh \
+  # Container tools
+  podman-compose
 
-# Use a COPR Example:
-#
-# dnf5 -y copr enable ublue-os/staging
-# dnf5 -y install package
-# Disable COPRs so they don't end up enabled on the final image:
-# dnf5 -y copr disable ublue-os/staging
+# Docker
+dnf config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
+sed -i "s/enabled=.*/enabled=0/g" /etc/yum.repos.d/docker-ce.repo
+dnf -y install --enablerepo=docker-ce-stable \
+    containerd.io \
+    docker-buildx-plugin \
+    docker-ce-cli \
+    docker-compose-plugin \
+    docker-model-plugin
 
-#### Example for enabling a System Unit File
-
+# Enable services
+systemctl enable docker.socket
 systemctl enable podman.socket
+
+# Tailscale
+dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+dnf config-manager setopt tailscale-stable.enabled=0
+dnf -y install --enablerepo='tailscale-stable' tailscale
+
+# Install nerdfonts (all of them them for simpler management)
+copr_install_isolated "che/nerd-fonts" "nerd-fonts"
+
+# Starship Shell Prompt
+ghcurl "https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-gnu.tar.gz" --retry 3 -o /tmp/starship.tar.gz
+tar -xzf /tmp/starship.tar.gz -C /tmp
+install -c -m 0755 /tmp/starship /usr/bin
+# shellcheck disable=SC2016
+echo 'eval "$(starship init bash)"' >>/etc/bashrc
+
+echo "::endgroup::"
+
+
+echo "::group:: Cleanup"
+# Cleanup
+dnf5 remove -y gnome-shell-extension-apps-menu \
+  gnome-shell-extension-launch-new-instance \
+  gnome-shell-extension-places-menu \
+  gnome-shell-extension-window-list \
+  gnome-shell-extension-background-logo
+
+dnf clean all
+
+rm -rf /.gitkeep
+find /var/* -maxdepth 0 -type d \! -name cache -exec rm -fr {} \;
+find /var/cache/* -maxdepth 0 -type d \! -name libdnf5 \! -name rpm-ostree -exec rm -fr {} \;
+rm -rf /tmp && mkdir -p /tmp
+rm -rf /boot && mkdir -p /boot
+
+echo "::endgroup::"
