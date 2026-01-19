@@ -54,6 +54,7 @@ sed -i "s/enabled=.*/enabled=0/g" /etc/yum.repos.d/docker-ce.repo
 dnf -y install --enablerepo=docker-ce-stable \
     containerd.io \
     docker-buildx-plugin \
+    docker-ce \
     docker-ce-cli \
     docker-compose-plugin \
     docker-model-plugin
@@ -61,6 +62,7 @@ dnf -y install --enablerepo=docker-ce-stable \
 # Enable services
 systemctl enable docker.socket
 systemctl enable podman.socket
+systemctl enable bluefin-dx-groups.service
 
 # Tailscale
 dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo
