@@ -1,6 +1,9 @@
 export image_name := env("IMAGE_NAME", "image-template") # output image name, usually same as repo name, change as needed
 export default_tag := env("DEFAULT_TAG", "latest")
 export bib_image := env("BIB_IMAGE", "quay.io/centos-bootc/bootc-image-builder:latest")
+# Base image to build on top of; override to build the "ublue" variant, e.g.
+# BASE_IMAGE=ghcr.io/ublue-os/silverblue-main:44 just build workstation latest-ublue
+export base_image := env("BASE_IMAGE", "quay.io/fedora/fedora-silverblue:44")
 
 alias build-vm := build-qcow2
 alias rebuild-vm := rebuild-qcow2
@@ -89,7 +92,7 @@ sudoif command *args:
 build $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
 
-    BUILD_ARGS=()
+    BUILD_ARGS=("--build-arg" "BASE_IMAGE=${base_image}")
     if [[ -z "$(git status -s)" ]]; then
         BUILD_ARGS+=("--build-arg" "SHA_HEAD_SHORT=$(git rev-parse --short HEAD)")
     fi

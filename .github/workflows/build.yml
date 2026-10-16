@@ -27,13 +27,29 @@ concurrency:
 
 jobs:
   build_push:
-    name: Build and push image
+    name: Build and push image (${{ matrix.variant }})
     runs-on: ubuntu-24.04
 
     permissions:
       contents: read
       packages: write
       id-token: write
+
+    strategy:
+      # Keep building the other variants even if one base image fails
+      fail-fast: false
+      matrix:
+        include:
+          # Plain Fedora Silverblue - owns the unsuffixed (default) tags
+          - variant: fedora
+            base_image: quay.io/fedora/fedora-silverblue:44
+            tag_suffix: ""
+            variant_desc: Fedora Silverblue
+          # Universal Blue Silverblue main - published as "<tag>-ublue"
+          - variant: ublue
+            base_image: ghcr.io/ublue-os/silverblue-main:44
+            tag_suffix: "-ublue"
+            variant_desc: Universal Blue Silverblue
 
     steps:
       - name: Prepare environment
@@ -77,6 +93,10 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         id: metadata
         with:
+          # Appends the per-variant suffix (e.g. "-ublue") to every generated tag.
+          # The Fedora variant uses an empty suffix and so keeps the default tags.
+          flavor: |
+            suffix=${{ matrix.tag_suffix }},onlatest=true
           # This generates all the tags for your image, you can add custom tags here too!
           # Default tags are "$DEFAULT_TAG" and "$DEFAULT_TAG.$date".
           tags: |
@@ -88,13 +108,14 @@ jobs:
           labels: |
             io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/${{ github.sha }}/README.md
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
-            org.opencontainers.image.description=${{ env.IMAGE_DESC }}
+            org.opencontainers.image.description=${{ env.IMAGE_DESC }} (based on ${{ matrix.variant_desc }})
             org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/${{ github.sha }}/README.md
             org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/blob/${{ github.sha }}/Containerfile
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/tree/${{ github.sha }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
-            org.opencontainers.image.version=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
+            org.opencontainers.image.version=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}${{ matrix.tag_suffix }}
+            org.opencontainers.image.base.name=${{ matrix.base_image }}
             io.artifacthub.package.deprecated=false
             io.artifacthub.package.keywords=${{ env.IMAGE_KEYWORDS }}
             io.artifacthub.package.license=Apache-2.0
@@ -110,6 +131,9 @@ jobs:
         with:
           containerfiles: |
             ./Containerfile
+          # Selects which base image this matrix leg builds on top of
+          build-args: |
+            BASE_IMAGE=${{ matrix.base_image }}
           # Postfix image name with -custom to make it a little more descriptive
           # Syntax: https://docs.github.com/en/actions/learn-github-actions/expressions#format
           image: ${{ env.IMAGE_NAME }}
@@ -126,8 +150,8 @@ jobs:
       #   uses: ublue-os/legacy-rechunk@a925083d9af7cb04b3e2a6e8c01bfa495f38b710 # v1.0.0
       #   with:
       #     rechunk: 'ghcr.io/ublue-os/legacy-rechunk:v1.0.0-x86_64'
-      #     ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
-      #     prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+      #     ref: "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}${{ matrix.tag_suffix }}"
+      #     prev-ref: "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}${{ matrix.tag_suffix }}"
       #     skip_compression: true
       #     version: ${{ env.CENTOS_VERSION }}
       #     labels: ${{ steps.metadata.outputs.labels }} # Rechunk strips out all the labels during build, this needs to be reapplied here with newline separator

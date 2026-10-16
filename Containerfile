@@ -1,10 +1,15 @@
+# Base image to build on top of. Overridable so the same recipe can be built
+# against plain Fedora Silverblue or the Universal Blue "main" variant.
+# Keep the default in sync with the matrix in .github/workflows/build.yml.
+ARG BASE_IMAGE=quay.io/fedora/fedora-silverblue:44
+
 # Allow build scripts to be referenced without being copied into the final image
 FROM scratch AS ctx
 COPY build_files /build_files
 COPY system_files /system_files
 
 # Base Image
-FROM quay.io/fedora/fedora-silverblue:44
+FROM ${BASE_IMAGE}
 
 ### [IM]MUTABLE /opt
 ## Some bootable images, like Fedora, have /opt symlinked to /var/opt, in order to
