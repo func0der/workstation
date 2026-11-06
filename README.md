@@ -77,6 +77,55 @@ gh secret set SIGNING_SECRET < cosign.key
 ```
 </details>
 
+### Step 2a.1: Enable signature verification on your machine:
+
+Run on the bootc host with `curl` and `jq` installed. This preserves existing
+policy rules and changes the default to reject images without an explicit allowance.
+
+If this repository already has a signature-discovery entry, use its existing
+`.yaml` filename below to avoid duplicate entries.
+
+```bash
+sudo bash <<'SETUP'
+set -euo pipefail
+workstation_setup_dir=$(mktemp -d)
+trap 'rm -rf "$workstation_setup_dir"' EXIT
+
+# Install the publisher's public key.
+curl -fsSL https://raw.githubusercontent.com/func0der/workstation/main/cosign.pub \
+  -o "$workstation_setup_dir/cosign.pub"
+install -Dm644 "$workstation_setup_dir/cosign.pub" /etc/pki/containers/workstation.pub
+
+# Enable discovery of Cosign signatures.
+mkdir -p /etc/containers/registries.d
+cat > /etc/containers/registries.d/workstation.yaml <<'YAML'
+docker:
+  ghcr.io/func0der/workstation:
+    use-sigstore-attachments: true
+YAML
+
+# Back up and update the trust policy.
+cp -a /etc/containers/policy.json /etc/containers/policy.json.bak
+jq '
+  .default = [{"type": "reject"}]
+  | .transports.docker[""] = [{"type": "insecureAcceptAnything"}]
+  | .transports.docker["ghcr.io/func0der/workstation"] = [{
+      "type": "sigstoreSigned",
+      "keyPath": "/etc/pki/containers/workstation.pub",
+      "signedIdentity": {"type": "matchRepository"}
+    }]
+' /etc/containers/policy.json > "$workstation_setup_dir/policy.json"
+install -m644 "$workstation_setup_dir/policy.json" /etc/containers/policy.json
+
+# Stage the signed image for the next boot.
+bootc switch --enforce-container-sigpolicy \
+  ghcr.io/func0der/workstation:latest-ublue
+SETUP
+```
+
+Reboot after the switch succeeds.
+
+
 ### Step 2b: Choosing Your Base Image
 
 To choose a base image, simply modify the line in the container file starting with `FROM`. This will be the image your image derives from, and is your starting point for modifications.
