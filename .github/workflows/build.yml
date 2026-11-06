@@ -42,12 +42,12 @@ jobs:
         include:
           # Plain Fedora Silverblue - owns the unsuffixed (default) tags
           - variant: fedora
-            base_image: quay.io/fedora/fedora-silverblue:44
+            base_image: quay.io/fedora/fedora-silverblue:45
             tag_suffix: ""
             variant_desc: Fedora Silverblue
           # Universal Blue Silverblue main - published as "<tag>-ublue"
           - variant: ublue
-            base_image: ghcr.io/ublue-os/silverblue-main:44
+            base_image: ghcr.io/ublue-os/silverblue-main:45
             tag_suffix: "-ublue"
             variant_desc: Universal Blue Silverblue
 

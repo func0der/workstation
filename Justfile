@@ -2,8 +2,8 @@ export image_name := env("IMAGE_NAME", "image-template") # output image name, us
 export default_tag := env("DEFAULT_TAG", "latest")
 export bib_image := env("BIB_IMAGE", "quay.io/centos-bootc/bootc-image-builder:latest")
 # Base image to build on top of; override to build the "ublue" variant, e.g.
-# BASE_IMAGE=ghcr.io/ublue-os/silverblue-main:44 just build workstation latest-ublue
-export base_image := env("BASE_IMAGE", "quay.io/fedora/fedora-silverblue:44")
+# BASE_IMAGE=ghcr.io/ublue-os/silverblue-main:45 just build workstation latest-ublue
+export base_image := env("BASE_IMAGE", "quay.io/fedora/fedora-silverblue:45")
 
 alias build-vm := build-qcow2
 alias rebuild-vm := rebuild-qcow2

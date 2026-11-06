@@ -1,7 +1,7 @@
 # Base image to build on top of. Overridable so the same recipe can be built
 # against plain Fedora Silverblue or the Universal Blue "main" variant.
 # Keep the default in sync with the matrix in .github/workflows/build.yml.
-ARG BASE_IMAGE=quay.io/fedora/fedora-silverblue:44
+ARG BASE_IMAGE=quay.io/fedora/fedora-silverblue:45
 
 # Allow build scripts to be referenced without being copied into the final image
 FROM scratch AS ctx
