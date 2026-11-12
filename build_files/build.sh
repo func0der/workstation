@@ -95,6 +95,9 @@ dnf -y install qemu \
     qemu-user-binfmt \
     qemu-user-static
 
+# Gnome Shell Extensions
+sudo dnf install -y gnome-shell-extension-appindicator
+
 echo "::endgroup::"
 
 
