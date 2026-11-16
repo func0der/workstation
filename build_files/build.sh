@@ -74,6 +74,28 @@ dnf config-manager addrepo --from-repofile=https://download.sublimetext.com/rpm/
 dnf config-manager setopt sublime-text.enabled=0
 dnf -y install --enablerepo='sublime-text' sublime-text
 
+tee /etc/yum.repos.d/netbird.repo <<EOF
+[netbird]
+name=netbird
+baseurl=https://pkgs.netbird.io/yum/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.netbird.io/yum/repodata/repomd.xml.key
+repo_gpgcheck=1
+EOF
+dnf config-manager addrepo --overwrite --from-repofile=/etc/yum.repos.d/netbird.repo
+dnf config-manager setopt netbird.enabled=0
+# netbird's %post runs `netbird service start`; the
+# start/daemon-reload steps need a live systemd and make dnf exit 1 in a
+# container build. Skip the scriptlet and drive the installer ourselves.
+dnf -y install --enablerepo='netbird' --setopt=tsflags=noscripts netbird
+dnf -y install --enablerepo='netbird' netbird-ui gtk4 webkitgtk6.0 xdg-utils
+
+netbird service uninstall || true
+netbird service install || true
+
+systemctl enable netbird.service
+
 # Install nerdfonts (all of them them for simpler management)
 copr_install_isolated "che/nerd-fonts" "nerd-fonts"
 
