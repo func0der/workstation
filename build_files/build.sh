@@ -57,7 +57,8 @@ dnf -y install --enablerepo=docker-ce-stable \
     docker-ce \
     docker-ce-cli \
     docker-compose-plugin \
-    docker-model-plugin
+    docker-model-plugin \
+    docker-ce-rootless-extras
 
 # Enable services
 systemctl enable docker.socket
