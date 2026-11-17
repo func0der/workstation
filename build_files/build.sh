@@ -93,7 +93,7 @@ dnf -y install --enablerepo='netbird' --setopt=tsflags=noscripts netbird
 dnf -y install --enablerepo='netbird' netbird-ui gtk4 webkitgtk6.0 xdg-utils
 
 netbird service uninstall || true
-netbird service install || true
+netbird service install --log-file console || true
 
 systemctl enable netbird.service
 
