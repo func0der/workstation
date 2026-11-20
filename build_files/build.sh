@@ -134,6 +134,9 @@ dnf5 remove -y gnome-shell-extension-apps-menu \
 
 dnf clean all
 
+# Mitigation until upstream version is rolled out https://github.com/podman-container-tools/podman/pull/30243
+v=$(rpm -q --qf '%{VERSION}' podman) && if [ "$(printf '%s\n' "$v" 6.2.1 | sort -V | head -n1)" = "$v" ] && [ "$v" != 6.2.1 ]; then install -d /usr/lib/systemd/system/user@.service.d /usr/lib/systemd/user/podman.service.d && printf '[Service]\nOOMScoreAdjust=0\n' > /usr/lib/systemd/system/user@.service.d/10-oom-adj-floor.conf && printf '[Service]\nOOMScoreAdjust=200\n' > /usr/lib/systemd/user/podman.service.d/10-oom-adj-floor.conf; else rm -f /usr/lib/systemd/system/user@.service.d/10-oom-adj-floor.conf /usr/lib/systemd/user/podman.service.d/10-oom-adj-floor.conf; fi
+
 rm -rf /.gitkeep
 find /var/* -maxdepth 0 -type d \! -name cache -exec rm -fr {} \;
 find /var/cache/* -maxdepth 0 -type d \! -name libdnf5 \! -name rpm-ostree -exec rm -fr {} \;
